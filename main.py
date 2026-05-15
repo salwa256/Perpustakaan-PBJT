@@ -471,15 +471,15 @@ def get_loans():
     cur = db.cursor()
 
     cur.execute("""
-        SELECT
-            l.*,
-            b.title as book_title,
-            b.author as book_author
-        FROM loans l
-        JOIN books b
-        ON l.book_id = b.id
-        ORDER BY l.borrow_date DESC
-    """)
+SELECT
+    l.*,
+    b.title as book_title,
+    b.author as book_author
+FROM loans l
+LEFT JOIN books b
+ON l.book_id = b.id
+ORDER BY l.borrow_date DESC
+""")
 
     loans = cur.fetchall()
 
@@ -508,8 +508,8 @@ def get_active_loans():
             b.title as book_title,
             b.author as book_author
         FROM loans l
-        JOIN books b
-        ON l.book_id = b.id
+LEFT JOIN books b
+ON l.book_id = b.id
         WHERE l.status IN ('dipinjam','terlambat')
         ORDER BY l.due_date ASC
     """)
@@ -692,8 +692,8 @@ def get_member_loans(nim: str):
             b.title as book_title,
             b.author as book_author
         FROM loans l
-        JOIN books b
-        ON l.book_id = b.id
+LEFT JOIN books b
+ON l.book_id = b.id
         WHERE l.nim = %s
         AND l.status IN ('dipinjam', 'terlambat')
         ORDER BY l.borrow_date DESC
@@ -843,8 +843,8 @@ def return_book(data: ReturnModel):
             l.*,
             b.title as book_title
         FROM loans l
-        JOIN books b
-        ON l.book_id = b.id
+LEFT JOIN books b
+ON l.book_id = b.id
         WHERE l.book_id = %s
         AND l.status IN ('dipinjam', 'terlambat')
         ORDER BY l.borrow_date DESC
