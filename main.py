@@ -418,47 +418,76 @@ def add_book(book: BookModel):
 def delete_book(book_id: str):
 
     db = get_db()
-
     cur = db.cursor()
 
-    cur.execute(
-        "SELECT status FROM books WHERE id=%s",
-        (book_id,)
-    )
+    try:
 
-    book = cur.fetchone()
+        # cek buku
+        cur.execute("""
+            SELECT *
+            FROM books
+            WHERE id=%s
+        """,(book_id,))
 
-    if not book:
+        book=cur.fetchone()
 
-        db.close()
+        if not book:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Buku tidak ditemukan"
+            )
+
+        # cek pinjaman aktif beneran
+        cur.execute("""
+            SELECT *
+            FROM loans
+            WHERE book_id=%s
+            AND status IN(
+                'dipinjam',
+                'terlambat'
+            )
+        """,(book_id,))
+
+        activeLoan=
+        cur.fetchone()
+
+        if activeLoan:
+
+            raise HTTPException(
+                status_code=400,
+                detail=
+                "Buku masih dipinjam"
+            )
+
+        cur.execute("""
+            DELETE
+            FROM books
+            WHERE id=%s
+        """,(book_id,))
+
+        db.commit()
+
+        return{
+            "message":
+            "Buku berhasil dihapus"
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        print("DELETE ERROR:")
+        print(e)
 
         raise HTTPException(
-            status_code=404,
-            detail="Buku tidak ditemukan"
+            status_code=500,
+            detail=str(e)
         )
 
-    if book["status"] == "dipinjam":
+    finally:
 
         db.close()
-
-        raise HTTPException(
-            status_code=400,
-            detail="Tidak bisa hapus buku yang sedang dipinjam"
-        )
-
-    cur.execute(
-        "DELETE FROM books WHERE id=%s",
-        (book_id,)
-    )
-
-    db.commit()
-
-    db.close()
-
-    return {
-        "message": "Buku berhasil dihapus"
-    }
-
 # =========================
 # LOANS
 # =========================
