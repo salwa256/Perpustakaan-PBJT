@@ -413,7 +413,7 @@ def add_book(book: BookModel):
 # =========================
 # DELETE BOOK
 # =========================
-@app.delete("/books/{book_id}")
+@app.delete("/books/{book_id:path}")
 def delete_book(book_id: str):
 
     db = get_db()
@@ -421,7 +421,6 @@ def delete_book(book_id: str):
 
     try:
 
-        # cek buku ada atau tidak
         cur.execute("""
             SELECT *
             FROM books
@@ -431,18 +430,16 @@ def delete_book(book_id: str):
         book = cur.fetchone()
 
         if not book:
-
             raise HTTPException(
                 status_code=404,
                 detail="Buku tidak ditemukan"
             )
 
-        # cek apakah masih dipinjam
         cur.execute("""
             SELECT *
             FROM loans
             WHERE book_id=%s
-            AND status IN (
+            AND status IN(
                 'dipinjam',
                 'terlambat'
             )
@@ -451,16 +448,13 @@ def delete_book(book_id: str):
         activeLoan = cur.fetchone()
 
         if activeLoan:
-
             raise HTTPException(
                 status_code=400,
                 detail="Buku masih dipinjam"
             )
 
-        # hapus buku
         cur.execute("""
-            DELETE
-            FROM books
+            DELETE FROM books
             WHERE id=%s
         """,(book_id,))
 
@@ -470,22 +464,9 @@ def delete_book(book_id: str):
             "message":"Buku berhasil dihapus"
         }
 
-    except Exception as e:
-
-        db.rollback()
-
-        print("DELETE ERROR:")
-        print(e)
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-
     finally:
-
         db.close()
-
+        
 # =========================
 # LOANS
 # =========================
