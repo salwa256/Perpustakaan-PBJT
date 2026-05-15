@@ -422,10 +422,10 @@ def delete_book(book_id: str):
     try:
 
         cur.execute("""
-            SELECT *
-            FROM books
-            WHERE id=%s
-        """,(book_id,))
+    SELECT *
+    FROM books
+    WHERE TRIM(id)=TRIM(%s)
+""",(book_id,))
 
         book = cur.fetchone()
 
@@ -454,9 +454,10 @@ def delete_book(book_id: str):
             )
 
         cur.execute("""
-            DELETE FROM books
-            WHERE id=%s
-        """,(book_id,))
+    DELETE
+    FROM books
+    WHERE TRIM(id)=TRIM(%s)
+""",(book_id,))
 
         db.commit()
 
