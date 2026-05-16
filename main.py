@@ -901,7 +901,149 @@ ON l.book_id = b.id
         f"Buku '{loan['book_title']}' berhasil dikembalikan"
     }
 
+# =========================
+# DELETE MEMBER
+# =========================
 
+@app.delete("/members/{member_id:path}")
+def delete_member(member_id: str):
+
+    db = get_db()
+    cur = db.cursor()
+
+    try:
+
+        # cek member ada
+        cur.execute("""
+            SELECT *
+            FROM members
+            WHERE TRIM(member_code)=TRIM(%s)
+            OR TRIM(nim)=TRIM(%s)
+        """,(member_id,member_id))
+
+        member = cur.fetchone()
+
+        if not member:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Member tidak ditemukan"
+            )
+
+        # cek pinjaman aktif
+        cur.execute("""
+            SELECT *
+            FROM loans
+            WHERE member_id=%s
+            AND status IN(
+                'dipinjam',
+                'terlambat'
+            )
+        """,(member["member_code"],))
+
+        activeLoan = cur.fetchone()
+
+        if activeLoan:
+
+            raise HTTPException(
+                status_code=400,
+                detail="Member masih memiliki pinjaman aktif"
+            )
+
+        cur.execute("""
+            DELETE
+            FROM members
+            WHERE id=%s
+        """,(member["id"],))
+
+        db.commit()
+
+        return{
+            "message":
+            "Member berhasil dihapus"
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+    finally:
+
+        db.close()
+
+        # =========================
+# EDIT MEMBER
+# =========================
+
+@app.put("/members/{member_id:path}")
+def update_member(
+    member_id:str,
+    member: MemberModel
+):
+
+    db = get_db()
+    cur = db.cursor()
+
+    try:
+
+        cur.execute("""
+            SELECT *
+            FROM members
+            WHERE id=%s
+        """,(member_id,))
+
+        old = cur.fetchone()
+
+        if not old:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Member tidak ditemukan"
+            )
+
+        cur.execute("""
+            UPDATE members
+            SET
+                member_code=%s,
+                name=%s,
+                nim=%s,
+                major=%s,
+                phone=%s,
+                address=%s
+            WHERE id=%s
+        """,(
+            member.member_code,
+            member.name,
+            member.nim,
+            member.major,
+            member.phone,
+            member.address,
+            member_id
+        ))
+
+        db.commit()
+
+        return {
+            "message":"Member berhasil diupdate"
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+    finally:
+
+        db.close()
 # =========================
 # RUN SERVER
 # =========================
